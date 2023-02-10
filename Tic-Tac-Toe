@@ -1,0 +1,268 @@
+//Ryan Jaffey
+//4/10/21
+#include <stdio.h>
+#include <conio.h>
+#define TRUE			1
+#define FALSE			0
+
+#define ROWS			3
+#define COLS			3
+
+#define MARK_ONE		'X'
+#define MARK_TWO		'O'
+#define BLANK			'*'
+
+#define MOVE_OK			1
+#define MOVE_COLLISION	2
+#define MOVE_OOB		3
+
+#define IN_PROGRESS		1
+#define X_WINS			2
+#define O_WINS			3
+#define TIE				4
+#define ERROR			5
+
+#define WIN_REQUIREMENT 3
+#pragma warning(disable:6031)
+#pragma warning(disable:6085)
+//Definition of Functions
+void InitializeBoard(char[ROWS][COLS]);//The first three are from the last program, the fourth is for this one.
+void DisplayBoard(char[ROWS][COLS]);
+int PlayerMove(int, int, char[ROWS][COLS], char);
+int VictoryCheck(char[ROWS][COLS], int);
+void DisplayVictoryMessage(int);
+int main() {
+	char theBoard[ROWS][COLS];
+	//No victor
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_ONE);
+	PlayerMove(1, 2, theBoard, MARK_ONE);
+	PlayerMove(1, 3, theBoard, MARK_TWO);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//Horizontal Victory
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_ONE);
+	PlayerMove(1, 2, theBoard, MARK_ONE);
+	PlayerMove(1, 3, theBoard, MARK_ONE);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//Vertical Victory
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_TWO);
+	PlayerMove(2, 1, theBoard, MARK_TWO);
+	PlayerMove(3, 1, theBoard, MARK_TWO);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//Diagonal Up Victory
+	InitializeBoard(theBoard);
+	PlayerMove(3, 1, theBoard, MARK_ONE);
+	PlayerMove(2, 2, theBoard, MARK_ONE);
+	PlayerMove(1, 3, theBoard, MARK_ONE);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//Diagonal Down Victory
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_TWO);
+	PlayerMove(2, 2, theBoard, MARK_TWO);
+	PlayerMove(3, 3, theBoard, MARK_TWO);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//TIE
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_ONE);
+	PlayerMove(1, 2, theBoard, MARK_TWO);
+	PlayerMove(1, 3, theBoard, MARK_ONE);
+	PlayerMove(2, 1, theBoard, MARK_TWO);
+	PlayerMove(2, 2, theBoard, MARK_ONE);
+	PlayerMove(2, 3, theBoard, MARK_TWO);
+	PlayerMove(3, 1, theBoard, MARK_TWO);
+	PlayerMove(3, 2, theBoard, MARK_ONE);
+	PlayerMove(3, 3, theBoard, MARK_TWO);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	//ERROR
+	InitializeBoard(theBoard);
+	PlayerMove(1, 1, theBoard, MARK_ONE);
+	PlayerMove(1, 2, theBoard, MARK_ONE);
+	PlayerMove(1, 3, theBoard, MARK_ONE);
+	PlayerMove(2, 1, theBoard, MARK_TWO);
+	PlayerMove(2, 2, theBoard, MARK_TWO);
+	PlayerMove(2, 3, theBoard, MARK_TWO);
+	PlayerMove(3, 1, theBoard, MARK_ONE);
+	PlayerMove(3, 2, theBoard, MARK_ONE);
+	PlayerMove(3, 3, theBoard, MARK_ONE);
+	DisplayVictoryMessage(VictoryCheck(theBoard, WIN_REQUIREMENT));
+	DisplayBoard(theBoard);
+	_getch();
+	return 0;
+}
+
+void InitializeBoard(char initializeMe[ROWS][COLS]) {
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLS; j++) {
+			initializeMe[i][j] = BLANK;
+		}
+	}
+}
+void DisplayBoard(char showMe[ROWS][COLS]) {
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLS; j++) {
+			printf("%-3c", showMe[i][j]);
+		}
+		printf("\n");
+	}
+}
+int PlayerMove(int requestedRow, int requestedColumn, char theBoard[ROWS][COLS], char symbol) {
+	int returnCode;
+	if (requestedRow > ROWS || requestedColumn > COLS ||
+		requestedRow <= 0 || requestedColumn <= 0) {
+		returnCode = MOVE_OOB;
+	}
+	else if (theBoard[requestedRow - 1][requestedColumn - 1] != BLANK) {
+		returnCode = MOVE_COLLISION;
+	}
+	else {
+		theBoard[requestedRow - 1][requestedColumn - 1] = symbol;
+		returnCode = MOVE_OK;
+	}
+
+	return returnCode;
+}
+int VictoryCheck(char checkMe[ROWS][COLS], int winRequirement) {//Here's where the new work begins
+	int blankSeen = FALSE;//set the three given variables to false
+	int XPresents = FALSE;
+	int OPresents = FALSE;
+	int winPotential = FALSE;//But add a new variable that keeps track if it has the potential to win, which for now is set to false
+	for (int i = 0; i < ROWS; i++) {//Set the board to show all blanks
+		for (int j = 0; j < COLS; j++) {
+			if (checkMe[i][j] == BLANK) {
+				blankSeen = TRUE;
+			}
+		}
+	}
+	for (int i = 0; i < ROWS; i++) {//First, we have an outer loop which tracks rows
+		for (int j = 0; j < COLS; j++) {//an inner loop that tracks colums
+			//Horizontal Check
+			winPotential = TRUE;//(set winPotential to true (more on that in a bit)).
+			for (int offset = 1; offset < WIN_REQUIREMENT; offset++) {//and a loop that goes even further deep and determines the patterns.
+				if (j + offset > COLS || checkMe[i][j + offset] != checkMe[i][j]) {//loop that checks the next column over
+					winPotential = FALSE;//Note that it sets this to FALSE, that's because we're checking for the error case of a given scenario.
+					//and if that error case is true, flip the the winRequirement to FALSE. But if the error case is false, do nothing and keep winRequirement TRUE. 
+				}
+			}
+			//Speaking of, heres a separate if for determining which mark is presenting victory
+			if (winPotential == TRUE) {//If winPotential remains true
+				if (checkMe[i][j] == MARK_ONE) {//check the mark, if it's an x
+					XPresents = TRUE;//then XPresents
+				}
+				else if (checkMe[i][j] == MARK_TWO) {//else (although we want to be explicit about it)
+					OPresents = TRUE;//OPresents
+				}
+			}
+			//Vertical Check
+			winPotential = TRUE;
+			for (int offset = 1; offset < WIN_REQUIREMENT; offset++) {//Same thing as before
+				if (i + offset > ROWS || checkMe[i + offset][j] != checkMe[i][j]) {//only now, it's checking the next row over
+					winPotential = FALSE;
+				}//Also, I believe this will work in one for loop, but I'm not 100% sure.
+
+			}
+			if (winPotential == TRUE) {
+				if (checkMe[i][j] == MARK_ONE) {
+					XPresents = TRUE;
+
+				}
+				else if (checkMe[i][j] == MARK_TWO) {
+					OPresents = TRUE;
+				}
+			}
+			//Diagonal-Up Check
+			winPotential = TRUE;
+			for (int offset = 1; offset < WIN_REQUIREMENT; offset++) {
+				if ((i - offset < 0 || j + offset >= COLS) || checkMe[i - offset][j + offset] != checkMe[i][j]) {
+					winPotential = FALSE;
+
+				}
+			}
+			if (winPotential == TRUE) {
+				if (checkMe[i][j] == MARK_ONE) {
+					XPresents = TRUE;
+				}
+				else if (checkMe[i][j] == MARK_TWO) {
+					OPresents = TRUE;
+				}
+			}
+			//Diagonal-Down check
+			winPotential = TRUE;
+			for (int offset = 1; offset < WIN_REQUIREMENT; offset++) {
+				if ((i + offset > ROWS || j + offset > COLS) || checkMe[i + offset][j + offset] != checkMe[i][j]) {
+					winPotential = FALSE;
+				}
+			}
+			if (winPotential == TRUE) {
+				if (checkMe[i][j] == MARK_ONE) {
+					XPresents = TRUE;
+				}
+				else if (checkMe[i][j] == MARK_TWO) {
+					OPresents = TRUE;
+				}
+			}
+
+		}
+		//Ok, we finished determining whether something presents or not. Now it's time to officially declare a winner.
+		if (XPresents == TRUE && OPresents == FALSE) {//If X presents and O does not present
+			winRequirement = X_WINS;//x wins
+		}
+		else if (XPresents == FALSE && OPresents == TRUE) {//and vise versa for o
+			winRequirement = O_WINS;
+		}
+		else if (XPresents == FALSE && OPresents == FALSE && blankSeen == TRUE) {//If neither won and there's still blank spaces
+			winRequirement = IN_PROGRESS;// then the game is still going
+		}
+		else if (XPresents == FALSE && OPresents == FALSE && blankSeen == FALSE) {//If the same thing happens, and there's no blank spaces
+			winRequirement = TIE;//it's a tie
+		}
+		else {//In any other case
+			winRequirement = ERROR;//it's an error.
+		}
+	}
+	return winRequirement;//And return the win requirement
+}
+void DisplayVictoryMessage(int victoryCode) {
+
+	// display the victory condition results
+
+	switch (victoryCode) {//A series of statements that print when a there is a desired win requirement.
+
+	case IN_PROGRESS:
+
+		printf("There is still no winner.\n");
+
+		break;
+
+	case X_WINS:
+
+		printf("MARKONE has won the game.\n");
+
+		break;
+
+	case O_WINS:
+
+		printf("MARKTWO has won the game.\n");
+
+		break;
+
+	case TIE:
+
+		printf("The game is a draw.\n");
+
+		break;
+
+	case ERROR:
+
+		printf("Something bad happened... MARKONE and MARKTWO have both won.\n");
+
+		break;
+	}
+}
